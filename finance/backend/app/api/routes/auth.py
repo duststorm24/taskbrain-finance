@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import SESSION_COOKIE, current_user
+from app.core.config import get_settings
 from app.core.security import sign_session, verify_password
 from app.db.models import User
 from app.db.repositories import create_user, get_user_by_email
@@ -25,11 +26,12 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
         timezone=payload.timezone,
     )
     db.commit()
+    settings = get_settings()
     response.set_cookie(
         SESSION_COOKIE,
         sign_session(user.id),
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=60 * 60 * 24 * 14,
     )
@@ -42,11 +44,12 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
+    settings = get_settings()
     response.set_cookie(
         SESSION_COOKIE,
         sign_session(user.id),
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=60 * 60 * 24 * 14,
     )
@@ -62,4 +65,3 @@ def logout(response: Response) -> dict[str, bool]:
 @router.get("/session", response_model=SessionResponse)
 def session(user: User = Depends(current_user)) -> SessionResponse:
     return SessionResponse(user=UserResponse.model_validate(user))
-

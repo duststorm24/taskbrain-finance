@@ -30,6 +30,7 @@ The app does not request Plaid Payments, Transfer, Auth, Identity, Signal, or ot
 - Runs locally on the user's home network
 - Remote access should be through Tailscale or another private network, not public port forwarding
 - API keys and secrets are loaded from environment variables
+- The backend refuses to start with placeholder signing/encryption secrets
 - `.env`, SQLite databases, local state, build output, and dependency folders are ignored by git
 - Plaid access tokens are encrypted before being stored in SQLite
 - Plaid access tokens are never exposed to the browser

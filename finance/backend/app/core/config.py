@@ -41,8 +41,18 @@ class Settings(BaseSettings):
             and self.token_encryption_key != "replace-with-fernet-key"
         )
 
+    @property
+    def cookie_secure(self) -> bool:
+        return self.env.lower() not in {"development", "local", "test"}
+
+    def validate_runtime_security(self) -> None:
+        if not self.is_securely_configured:
+            raise RuntimeError(
+                "TaskBrain Finance requires TASKBRAIN_FINANCE_SESSION_SECRET and "
+                "TASKBRAIN_FINANCE_TOKEN_ENCRYPTION_KEY to be set before startup."
+            )
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

@@ -21,6 +21,8 @@ Secrets must be stored in environment variables or an uncommitted `.env` file:
 
 The committed `.env.example` file contains placeholders only.
 
+The backend validates startup settings and refuses to run with placeholder session-signing or token-encryption secrets.
+
 ## Plaid Token Handling
 
 - The browser receives only Plaid Link tokens and public-token exchange responses needed for the connection flow.
