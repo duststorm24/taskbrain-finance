@@ -13,7 +13,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -33,7 +35,9 @@ button:disabled {
   opacity: 0.45;
 }
 
-input {
+input,
+select,
+textarea {
   width: 100%;
   min-height: 38px;
   padding: 8px 10px;
@@ -41,6 +45,11 @@ input {
   border-radius: 8px;
   background: #fff;
   color: #182235;
+}
+
+textarea {
+  min-height: 84px;
+  resize: vertical;
 }
 
 .finance-shell {
@@ -234,13 +243,16 @@ input {
 .button-row,
 .connector-stack,
 .expense-form,
+.goal-form,
 .expense-list,
+.goal-list,
 .category-list,
 .stream-list,
 .transaction-list,
 .recommendation-list,
 .account-list,
-.item-list {
+.item-list,
+.analysis-menu {
   display: grid;
   gap: 10px;
 }
@@ -253,13 +265,24 @@ input {
   grid-column: 1 / -1;
 }
 
+.goal-form {
+  grid-template-columns: minmax(140px, 1fr) minmax(126px, 0.8fr) minmax(96px, 0.65fr) minmax(112px, 0.65fr);
+}
+
+.goal-form textarea,
+.goal-form button {
+  grid-column: 1 / -1;
+}
+
 .expense-list article,
+.goal-list article,
 .category-list article,
 .stream-list article,
 .transaction-list article,
 .account-list article,
 .recommendation-list article,
-.item-list > div {
+.item-list > div,
+.analysis-option {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -269,7 +292,8 @@ input {
   background: #f6f8fb;
 }
 
-.expense-list article > div:last-child {
+.expense-list article > div:last-child,
+.goal-list article > div:last-child {
   display: grid;
   justify-items: end;
   gap: 4px;
@@ -408,6 +432,74 @@ input {
   margin: 10px 0;
 }
 
+.ai-panel {
+  background: #fbfcfe;
+}
+
+.analysis-menu {
+  margin-bottom: 14px;
+}
+
+.analysis-option {
+  align-items: start;
+  background: #fff;
+}
+
+.analysis-option span,
+.analysis-option small,
+.analysis-meta span,
+.empty-analysis span {
+  display: block;
+  color: #5b6678;
+  line-height: 1.45;
+}
+
+.analysis-option small {
+  margin-top: 4px;
+  font-weight: 750;
+}
+
+.deep-option {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+}
+
+.analysis-output {
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.analysis-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #e6ebf1;
+}
+
+.analysis-meta select {
+  max-width: 420px;
+}
+
+.markdown-output,
+.empty-analysis {
+  padding: 14px;
+}
+
+.markdown-output {
+  min-height: 160px;
+  white-space: pre-wrap;
+  color: #263244;
+  line-height: 1.58;
+}
+
+.empty-analysis {
+  display: grid;
+  gap: 4px;
+}
+
 .recharts-default-tooltip {
   border-radius: 8px !important;
   border-color: #d8e0ea !important;
@@ -428,7 +520,8 @@ input {
   .planning-grid,
   .workspace-grid,
   .input-grid,
-  .expense-form {
+  .expense-form,
+  .goal-form {
     grid-template-columns: 1fr;
   }
 }
@@ -454,5 +547,15 @@ input {
   .status-grid,
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .analysis-option,
+  .analysis-meta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analysis-meta select {
+    max-width: none;
   }
 }

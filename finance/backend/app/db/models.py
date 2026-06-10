@@ -192,6 +192,22 @@ class PlannedExpense(Base):
     updated_at: Mapped[str] = mapped_column(String, nullable=False)
 
 
+class FinancialGoal(Base):
+    __tablename__ = "financial_goals"
+    __table_args__ = (Index("idx_financial_goals_user_status", "user_id", "status"),)
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    target_date: Mapped[str | None] = mapped_column(String)
+    target_amount_cents: Mapped[int | None] = mapped_column(Integer)
+    priority: Mapped[str] = mapped_column(String, nullable=False, default="medium")
+    status: Mapped[str] = mapped_column(String, nullable=False, default="active")
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
 class SyncRun(Base):
     __tablename__ = "sync_runs"
 

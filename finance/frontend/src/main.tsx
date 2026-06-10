@@ -80,6 +80,31 @@ type PlannedExpense = {
   notes?: string | null;
 };
 
+type FinancialGoal = {
+  id: string;
+  title: string;
+  target_date?: string | null;
+  target_amount_cents?: number | null;
+  priority: string;
+  status: string;
+  notes?: string | null;
+};
+
+type AnalysisMode = "daily" | "detailed" | "complete";
+
+type AiSummary = {
+  id: string;
+  summary_type: AnalysisMode;
+  period_start: string;
+  period_end: string;
+  model: string;
+  title: string;
+  summary_markdown: string;
+  insights: Record<string, unknown>;
+  input_fingerprint: string;
+  created_at: string;
+};
+
 type CashFlowMonth = {
   month: string;
   incomeCents: number;
@@ -146,6 +171,24 @@ const timelineMonths: Record<Timeline, number> = {
   all: 36,
 };
 
+const analysisModeLabels: Record<AnalysisMode, { title: string; model: string; detail: string }> = {
+  daily: {
+    title: "Daily Review",
+    model: "5.4 mini",
+    detail: "Fast, lower-cost review for routine spending, cash flow, upcoming events, and action items.",
+  },
+  detailed: {
+    title: "Detailed Analysis",
+    model: "5.5",
+    detail: "Deeper review for category patterns, recurring expenses, goals, debt, investments, and forecasts.",
+  },
+  complete: {
+    title: "Complete Financial Deep Analysis",
+    model: "5.5",
+    detail: "Baseline analysis for first setup or a yearly reset after all institutions are linked.",
+  },
+};
+
 const privacyPolicySections = [
   {
     title: "What TaskBrain Finance is",
@@ -155,7 +198,7 @@ const privacyPolicySections = [
   {
     title: "Data collected with your consent",
     body:
-      "When you connect an institution through Plaid Link, the app may receive account metadata, balances, transactions, recurring transaction streams, investment holdings and investment transactions, and liability details such as loans or credit card balances. The app may also store planning inputs you enter directly, such as future one-time expenses, budget categories, notes, and forecast assumptions.",
+      "When you connect an institution through Plaid Link, the app may receive account metadata, balances, transactions, recurring transaction streams, investment holdings and investment transactions, and liability details such as loans or credit card balances. The app may also store planning inputs you enter directly, such as future one-time expenses, financial goals, budget categories, notes, and forecast assumptions.",
   },
   {
     title: "How the data is used",
@@ -170,7 +213,7 @@ const privacyPolicySections = [
   {
     title: "Sharing and AI analysis",
     body:
-      "TaskBrain Finance does not sell consumer financial data. Plaid is used to retrieve financial data after consent through Plaid Link. OpenAI may be used to generate summaries or recommendations from selected financial context; prompts should avoid unnecessary sensitive identifiers where possible.",
+      "TaskBrain Finance does not sell consumer financial data. Plaid is used to retrieve financial data after consent through Plaid Link. OpenAI may be used to generate daily reviews, detailed analyses, and baseline analyses from selected financial context. Prompts should avoid unnecessary sensitive identifiers and should not include Plaid access tokens, API keys, account numbers, or login credentials.",
   },
   {
     title: "Retention and deletion",
@@ -256,6 +299,16 @@ function formatCategoryName(value: string) {
 
 function monthKeyLabel(value: string) {
   return parseDate(`${value}-01`).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function accountSum(accounts: FinanceAccount[], predicate: (account: FinanceAccount) => boolean) {
@@ -459,10 +512,15 @@ function App() {
   const [cashFlow, setCashFlow] = useState<CashFlowResponse | null>(null);
   const [recurringStreams, setRecurringStreams] = useState<RecurringStream[]>([]);
   const [plannedExpenses, setPlannedExpenses] = useState<PlannedExpense[]>([]);
+  const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
+  const [aiSummaries, setAiSummaries] = useState<AiSummary[]>([]);
   const [timeline, setTimeline] = useState<Timeline>("year");
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisRunning, setAnalysisRunning] = useState<AnalysisMode | null>(null);
+  const [selectedSummaryId, setSelectedSummaryId] = useState("");
 
   const [monthlyIncome, setMonthlyIncome] = useState(5200);
   const [fixedSpend, setFixedSpend] = useState(2800);
@@ -477,6 +535,11 @@ function App() {
   const [expenseDate, setExpenseDate] = useState("2026-09-15");
   const [expenseAmount, setExpenseAmount] = useState(2000);
   const [expenseCategory, setExpenseCategory] = useState("Travel");
+  const [goalTitle, setGoalTitle] = useState("Emergency fund");
+  const [goalDate, setGoalDate] = useState("2027-12-31");
+  const [goalAmount, setGoalAmount] = useState(10000);
+  const [goalPriority, setGoalPriority] = useState("high");
+  const [goalNotes, setGoalNotes] = useState("");
 
   const accounts = netWorth?.accounts ?? [];
   const cashCents = accountSum(accounts, (account) => account.type === "depository" && account.classification === "asset");
@@ -487,6 +550,10 @@ function App() {
 
   const monthlyNetCents = toCents(monthlyIncome - fixedSpend - variableSpend - debtPayment);
   const timelineLength = timelineMonths[timeline];
+  const selectedSummary = useMemo(
+    () => aiSummaries.find((summary) => summary.id === selectedSummaryId) ?? aiSummaries[0] ?? null,
+    [aiSummaries, selectedSummaryId],
+  );
 
   const netWorthSeries = useMemo(() => {
     const currentNetWorth = netWorth?.currentNetWorthCents ?? 0;
@@ -643,6 +710,10 @@ function App() {
         setRecurringStreams(recurringResponse.streams);
         const expenseResponse = await apiRequest<{ expenses: PlannedExpense[] }>("/planning/expenses");
         setPlannedExpenses(expenseResponse.expenses);
+        const goalResponse = await apiRequest<{ goals: FinancialGoal[] }>("/planning/goals");
+        setFinancialGoals(goalResponse.goals);
+        const summaryResponse = await apiRequest<{ summaries: AiSummary[] }>("/ai/summaries");
+        setAiSummaries(summaryResponse.summaries);
       } catch {
         setSession(null);
         setItems([]);
@@ -650,6 +721,9 @@ function App() {
         setCashFlow(null);
         setRecurringStreams([]);
         setPlannedExpenses([]);
+        setFinancialGoals([]);
+        setAiSummaries([]);
+        setSelectedSummaryId("");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Finance API is not reachable");
@@ -693,6 +767,54 @@ function App() {
   async function deletePlannedExpense(expenseId: string) {
     await apiRequest(`/planning/expenses/${expenseId}`, { method: "DELETE" });
     await refresh();
+  }
+
+  async function addFinancialGoal(event: React.FormEvent) {
+    event.preventDefault();
+    if (!goalTitle) return;
+    await apiRequest("/planning/goals", {
+      method: "POST",
+      body: JSON.stringify({
+        title: goalTitle,
+        target_date: goalDate || null,
+        target_amount_cents: goalAmount > 0 ? toCents(goalAmount) : null,
+        priority: goalPriority,
+        notes: goalNotes || null,
+      }),
+    });
+    setGoalTitle("");
+    setGoalAmount(0);
+    setGoalNotes("");
+    await refresh();
+  }
+
+  async function deleteFinancialGoal(goalId: string) {
+    await apiRequest(`/planning/goals/${goalId}`, { method: "DELETE" });
+    await refresh();
+  }
+
+  async function runAiAnalysis(mode: AnalysisMode) {
+    if (mode === "complete") {
+      const confirmed = window.confirm(
+        "Complete Financial Deep Analysis uses the heavier 5.5 model and is intended for first setup after linking every institution, then roughly once yearly. Run it now?",
+      );
+      if (!confirmed) return;
+    }
+    setAnalysisOpen(true);
+    setAnalysisRunning(mode);
+    setError("");
+    try {
+      const summary = await apiRequest<AiSummary>("/ai/analyze", {
+        method: "POST",
+        body: JSON.stringify({ mode }),
+      });
+      setAiSummaries((current) => [summary, ...current.filter((row) => row.id !== summary.id)]);
+      setSelectedSummaryId(summary.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "AI analysis failed");
+    } finally {
+      setAnalysisRunning(null);
+    }
   }
 
   async function disconnectPlaidItem(itemId: string) {
@@ -1008,6 +1130,49 @@ function App() {
             <section className="panel">
               <div className="panel-heading">
                 <div>
+                  <p>Future Goals</p>
+                  <h2>Targets</h2>
+                </div>
+              </div>
+              <form className="goal-form" onSubmit={addFinancialGoal}>
+                <input value={goalTitle} onChange={(event) => setGoalTitle(event.target.value)} placeholder="Goal" />
+                <input value={goalDate} onChange={(event) => setGoalDate(event.target.value)} type="date" />
+                <input value={goalAmount} onChange={(event) => setGoalAmount(Number(event.target.value))} type="number" min="0" />
+                <select value={goalPriority} onChange={(event) => setGoalPriority(event.target.value)}>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                <textarea value={goalNotes} onChange={(event) => setGoalNotes(event.target.value)} placeholder="Notes or assumptions" />
+                <button type="submit">Add Goal</button>
+              </form>
+              <div className="goal-list">
+                {financialGoals.length === 0 ? (
+                  <span>No financial goals yet.</span>
+                ) : (
+                  financialGoals.map((goal) => (
+                    <article key={goal.id}>
+                      <div>
+                        <strong>{goal.title}</strong>
+                        <span>
+                          {[goal.target_date, goal.priority, goal.notes].filter(Boolean).join(" / ")}
+                        </span>
+                      </div>
+                      <div>
+                        <strong>{goal.target_amount_cents ? formatMoney(goal.target_amount_cents) : "Open"}</strong>
+                        <button type="button" className="text-button danger-text" onClick={() => void deleteFinancialGoal(goal.id)}>
+                          Remove
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
                   <p>Review</p>
                   <h2>Plan Notes</h2>
                 </div>
@@ -1033,6 +1198,73 @@ function App() {
                   <strong>Base 2060 investments</strong>
                   <span>{formatMoney(recommendations.finalBase)}</span>
                 </article>
+              </div>
+            </section>
+
+            <section className="panel wide-panel ai-panel">
+              <div className="panel-heading">
+                <div>
+                  <p>OpenAI</p>
+                  <h2>AI Analysis</h2>
+                </div>
+                <button type="button" onClick={() => setAnalysisOpen((value) => !value)}>
+                  AI Analysis
+                </button>
+              </div>
+              {analysisOpen && (
+                <div className="analysis-menu">
+                  {(["daily", "detailed", "complete"] as AnalysisMode[]).map((mode) => {
+                    const label = analysisModeLabels[mode];
+                    return (
+                      <article key={mode} className={mode === "complete" ? "analysis-option deep-option" : "analysis-option"}>
+                        <div>
+                          <strong>{label.title}</strong>
+                          <span>{label.detail}</span>
+                          <small>Model: {label.model}</small>
+                        </div>
+                        <button type="button" disabled={Boolean(analysisRunning)} onClick={() => void runAiAnalysis(mode)}>
+                          {analysisRunning === mode ? "Running..." : "Run"}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="analysis-output">
+                {selectedSummary ? (
+                  <>
+                    <div className="analysis-meta">
+                      <div>
+                        <strong>{selectedSummary.title}</strong>
+                        <span>
+                          {analysisModeLabels[selectedSummary.summary_type]?.model ?? selectedSummary.model} /{" "}
+                          {formatDateTime(selectedSummary.created_at)}
+                        </span>
+                      </div>
+                      {aiSummaries.length > 1 && (
+                        <select
+                          value={selectedSummary.id}
+                          onChange={(event) => setSelectedSummaryId(event.target.value)}
+                          aria-label="Select AI analysis"
+                        >
+                          {aiSummaries.map((summary) => (
+                            <option key={summary.id} value={summary.id}>
+                              {summary.title} - {formatDateTime(summary.created_at)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    <div className="markdown-output">{selectedSummary.summary_markdown}</div>
+                  </>
+                ) : (
+                  <div className="empty-analysis">
+                    <strong>No AI analysis yet.</strong>
+                    <span>
+                      Run the deep analysis once after connecting all institutions, then use daily or detailed reviews for updates.
+                    </span>
+                  </div>
+                )}
               </div>
             </section>
 

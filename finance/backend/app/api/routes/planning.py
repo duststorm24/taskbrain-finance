@@ -3,9 +3,16 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import current_user
 from app.core.security import new_id, utcnow
-from app.db.models import PlannedExpense, User
+from app.db.models import FinancialGoal, PlannedExpense, User
 from app.db.session import get_db
-from app.schemas.planning import PlannedExpenseCreate, PlannedExpenseListResponse, PlannedExpenseResponse
+from app.schemas.planning import (
+    FinancialGoalCreate,
+    FinancialGoalListResponse,
+    FinancialGoalResponse,
+    PlannedExpenseCreate,
+    PlannedExpenseListResponse,
+    PlannedExpenseResponse,
+)
 
 
 router = APIRouter()
@@ -64,6 +71,57 @@ def delete_expense(
     return {"ok": True}
 
 
+@router.get("/goals", response_model=FinancialGoalListResponse)
+def list_goals(user: User = Depends(current_user), db: Session = Depends(get_db)) -> FinancialGoalListResponse:
+    rows = (
+        db.query(FinancialGoal)
+        .filter(FinancialGoal.user_id == user.id, FinancialGoal.status == "active")
+        .order_by(FinancialGoal.target_date.asc(), FinancialGoal.created_at.asc())
+        .all()
+    )
+    return FinancialGoalListResponse(goals=[_goal_response(row) for row in rows])
+
+
+@router.post("/goals", response_model=FinancialGoalResponse)
+def create_goal(
+    payload: FinancialGoalCreate,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> FinancialGoalResponse:
+    now = utcnow()
+    goal = FinancialGoal(
+        id=new_id(),
+        user_id=user.id,
+        title=payload.title,
+        target_date=payload.target_date,
+        target_amount_cents=payload.target_amount_cents,
+        priority=payload.priority,
+        status="active",
+        notes=payload.notes,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(goal)
+    db.commit()
+    db.refresh(goal)
+    return _goal_response(goal)
+
+
+@router.delete("/goals/{goal_id}")
+def delete_goal(
+    goal_id: str,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, bool]:
+    goal = db.query(FinancialGoal).filter(FinancialGoal.id == goal_id, FinancialGoal.user_id == user.id).one_or_none()
+    if not goal:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Financial goal not found")
+    goal.status = "archived"
+    goal.updated_at = utcnow()
+    db.commit()
+    return {"ok": True}
+
+
 def _response(expense: PlannedExpense) -> PlannedExpenseResponse:
     return PlannedExpenseResponse(
         id=expense.id,
@@ -76,3 +134,16 @@ def _response(expense: PlannedExpense) -> PlannedExpenseResponse:
         updated_at=expense.updated_at,
     )
 
+
+def _goal_response(goal: FinancialGoal) -> FinancialGoalResponse:
+    return FinancialGoalResponse(
+        id=goal.id,
+        title=goal.title,
+        target_date=goal.target_date,
+        target_amount_cents=goal.target_amount_cents,
+        priority=goal.priority,
+        status=goal.status,
+        notes=goal.notes,
+        created_at=goal.created_at,
+        updated_at=goal.updated_at,
+    )

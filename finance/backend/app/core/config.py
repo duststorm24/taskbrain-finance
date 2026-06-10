@@ -32,6 +32,9 @@ class Settings(BaseSettings):
 
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-5.5", validation_alias="OPENAI_MODEL")
+    openai_daily_model: str = Field(default="", validation_alias="OPENAI_DAILY_MODEL")
+    openai_detailed_model: str = Field(default="", validation_alias="OPENAI_DETAILED_MODEL")
+    openai_complete_model: str = Field(default="", validation_alias="OPENAI_COMPLETE_MODEL")
 
     @property
     def allowed_origins_list(self) -> list[str]:
@@ -69,6 +72,15 @@ class Settings(BaseSettings):
     @property
     def plaid_linking_enabled(self) -> bool:
         return self.plaid_configured and not self.plaid_production_locked
+
+    def openai_model_for_mode(self, mode: str) -> str:
+        if mode == "daily":
+            return self.openai_daily_model or "gpt-5.4-mini"
+        if mode == "detailed":
+            return self.openai_detailed_model or self.openai_model
+        if mode == "complete":
+            return self.openai_complete_model or self.openai_model
+        return self.openai_model
 
     def validate_runtime_security(self) -> None:
         if not self.is_securely_configured:

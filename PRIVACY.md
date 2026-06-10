@@ -15,7 +15,7 @@ When an institution is connected through Plaid Link, TaskBrain Finance may recei
 - Investment holdings and investment transactions.
 - Liability information, such as loan balances, credit card balances, APRs, and payment details when available.
 
-The app may also store data entered directly by the user, including planned future expenses, budget categories, forecast assumptions, and notes.
+The app may also store data entered directly by the user, including planned future expenses, financial goals, budget categories, forecast assumptions, and notes.
 
 ## How Data Is Used
 
@@ -33,7 +33,7 @@ The intended deployment model is a private home network or private remote access
 
 TaskBrain Finance does not sell consumer financial data.
 
-Plaid is used to retrieve financial data after consent through Plaid Link. OpenAI may be used to generate summaries or recommendations from selected financial context. Prompts should avoid unnecessary sensitive identifiers where possible.
+Plaid is used to retrieve financial data after consent through Plaid Link. OpenAI may be used to generate daily reviews, detailed analyses, and initial or yearly baseline analyses from selected financial context. Prompts should avoid unnecessary sensitive identifiers where possible, and should not include Plaid access tokens, API keys, account numbers, or login credentials.
 
 ## Retention And Deletion
 

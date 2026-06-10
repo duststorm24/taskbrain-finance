@@ -13,7 +13,8 @@ This project is built for read-only personal financial analysis. It does not ini
 - Encrypted Plaid access-token storage
 - Plaid disconnect/delete control for revoking access and removing local synced data
 - Account, transaction, recurring-stream, cash-flow, planning, and sync foundations
-- Dashboard views for net worth, cash flow, future expenses, projections, and AI-style recommendations
+- Dashboard views for net worth, cash flow, future expenses, financial goals, projections, and AI recommendations
+- OpenAI analysis modes for daily reviews, detailed reviews, and initial/yearly deep baseline reviews
 - Daily sync scaffolding for cron/systemd deployment
 
 ## Plaid Products
@@ -36,7 +37,8 @@ The app does not request Plaid Payments, Transfer, Auth, Identity, Signal, or ot
 - Plaid access tokens are encrypted before being stored in SQLite
 - Plaid access tokens are never exposed to the browser
 - Production Plaid linking requires both `PLAID_ENV=production` and `PLAID_ALLOW_PRODUCTION_LINKING=true`
-- OpenAI summaries should receive aggregate financial context only, not raw secrets, tokens, account numbers, or unnecessary transaction detail
+- OpenAI analysis receives sanitized financial context only, not raw secrets, Plaid tokens, API keys, account numbers, or unnecessary transaction detail
+- Deep AI analysis is intended for initial setup after linking institutions, then occasional yearly baseline updates
 
 ## Repository Layout
 
