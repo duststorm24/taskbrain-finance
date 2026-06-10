@@ -6,6 +6,7 @@ from plaid.api import plaid_api
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.item_remove_request import ItemRemoveRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
@@ -19,7 +20,7 @@ from app.core.config import get_settings
 
 def _client() -> plaid_api.PlaidApi:
     settings = get_settings()
-    host = Environment.Sandbox if settings.plaid_env == "sandbox" else Environment.Production
+    host = Environment.Production if settings.normalized_plaid_env == "production" else Environment.Sandbox
     config = Configuration(
         host=host,
         api_key={
@@ -54,6 +55,10 @@ def exchange_public_token_for_item(user_id: str, public_token: str) -> dict[str,
     request = ItemPublicTokenExchangeRequest(public_token=public_token)
     response = _client().item_public_token_exchange(request)
     return response.to_dict()
+
+
+def remove_item(access_token: str) -> None:
+    _client().item_remove(ItemRemoveRequest(access_token=access_token))
 
 
 def get_accounts(access_token: str) -> dict[str, Any]:

@@ -37,9 +37,9 @@ Plaid is used to retrieve financial data after consent through Plaid Link. OpenA
 
 ## Retention And Deletion
 
-Data remains on the local system until it is deleted by the owner/operator. Because this is a self-hosted application, deleting local database files or disconnecting Plaid Items removes local access to stored financial data.
+Data remains on the local system until it is deleted by the owner/operator. The application includes a disconnect and delete control for Plaid Items. When used, the backend attempts to revoke the Plaid Item and then removes the associated local accounts, balances, transactions, recurring streams, snapshots, sync history, and generated AI summaries.
 
-Formal in-app deletion and retention controls are planned before any broader multi-user release.
+Because this is a self-hosted application, the owner/operator can also remove local database files directly. A more formal periodically reviewed retention schedule is planned before any broader multi-user release.
 
 ## Contact
 

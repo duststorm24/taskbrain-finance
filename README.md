@@ -9,8 +9,9 @@ This project is built for read-only personal financial analysis. It does not ini
 - Local FastAPI backend under `finance/backend`
 - Local React/Vite frontend under `finance/frontend`
 - SQLite database for the first implementation
-- Plaid Link sandbox connection flow
+- Plaid Link sandbox connection flow with production-linking safety lock
 - Encrypted Plaid access-token storage
+- Plaid disconnect/delete control for revoking access and removing local synced data
 - Account, transaction, recurring-stream, cash-flow, planning, and sync foundations
 - Dashboard views for net worth, cash flow, future expenses, projections, and AI-style recommendations
 - Daily sync scaffolding for cron/systemd deployment
@@ -34,6 +35,7 @@ The app does not request Plaid Payments, Transfer, Auth, Identity, Signal, or ot
 - `.env`, SQLite databases, local state, build output, and dependency folders are ignored by git
 - Plaid access tokens are encrypted before being stored in SQLite
 - Plaid access tokens are never exposed to the browser
+- Production Plaid linking requires both `PLAID_ENV=production` and `PLAID_ALLOW_PRODUCTION_LINKING=true`
 - OpenAI summaries should receive aggregate financial context only, not raw secrets, tokens, account numbers, or unnecessary transaction detail
 
 ## Repository Layout
@@ -78,6 +80,12 @@ http://127.0.0.1:5173
 ## Production Notes
 
 For a Raspberry Pi deployment, use a local reverse proxy such as Caddy or Nginx, bind the FastAPI service to localhost, and access the app remotely through Tailscale. Keep the database and `.env` file outside any public web root and back them up with local encryption.
+
+Before enabling real Plaid connections, run:
+
+```bash
+./.venv/bin/python finance/backend/scripts/local_security_check.py
+```
 
 ## License
 

@@ -232,6 +232,7 @@ input {
 .auth-form,
 .auth-footer,
 .button-row,
+.connector-stack,
 .expense-form,
 .expense-list,
 .category-list,
@@ -258,7 +259,7 @@ input {
 .transaction-list article,
 .account-list article,
 .recommendation-list article,
-.item-list div {
+.item-list > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -324,6 +325,40 @@ input {
   margin-top: 16px;
   color: #5b6678;
   font-size: 0.9rem;
+}
+
+.safety-callout {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  background: #eef2ff;
+}
+
+.safety-callout span,
+.confirm-check span {
+  color: #3c4757;
+  line-height: 1.45;
+}
+
+.danger-callout {
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.confirm-check {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: start;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.confirm-check input {
+  width: 18px;
+  min-height: 18px;
+  margin-top: 2px;
 }
 
 .modal-backdrop {

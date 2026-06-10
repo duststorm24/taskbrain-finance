@@ -27,6 +27,11 @@ type HealthResponse = {
   secure_config_present: boolean;
   openai_key_configured: boolean;
   plaid_configured: boolean;
+  plaid_environment: string;
+  plaid_production_secret_present: boolean;
+  plaid_production_linking_enabled: boolean;
+  plaid_production_locked: boolean;
+  plaid_linking_enabled: boolean;
 };
 
 type UserResponse = {
@@ -257,9 +262,27 @@ function accountSum(accounts: FinanceAccount[], predicate: (account: FinanceAcco
   return accounts.filter(predicate).reduce((total, account) => total + account.currentBalanceCents, 0);
 }
 
-function PlaidConnector({ enabled, onConnected }: { enabled: boolean; onConnected: () => void }) {
+function PlaidConnector({
+  configured,
+  environment,
+  productionLocked,
+  productionLinkingEnabled,
+  productionSecretPresent,
+  onConnected,
+}: {
+  configured: boolean;
+  environment: string;
+  productionLocked: boolean;
+  productionLinkingEnabled: boolean;
+  productionSecretPresent: boolean;
+  onConnected: () => void;
+}) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [productionConfirmed, setProductionConfirmed] = useState(false);
   const [error, setError] = useState("");
+  const isProduction = environment === "production";
+  const canOpenLink = configured && !productionLocked && (!isProduction || (productionLinkingEnabled && productionConfirmed));
+  const buttonLabel = isProduction ? "Connect production account" : "Connect sandbox account";
 
   async function prepareLink() {
     setError("");
@@ -289,9 +312,31 @@ function PlaidConnector({ enabled, onConnected }: { enabled: boolean; onConnecte
   }, [linkToken, plaid]);
 
   return (
-    <div className="button-row">
-      <button type="button" disabled={!enabled} onClick={prepareLink}>
-        Connect Sandbox
+    <div className="connector-stack">
+      <div className={isProduction ? "safety-callout danger-callout" : "safety-callout"}>
+        <strong>{isProduction ? "Production mode" : "Sandbox mode"}</strong>
+        <span>
+          {isProduction
+            ? productionLocked
+              ? "Real institution linking is locked. Production credentials are stored, but the backend will reject new production connections until you intentionally enable them."
+              : "Real institution linking is available. Confirm below before opening Plaid Link."
+            : productionSecretPresent
+              ? "Sandbox linking is active. The production secret is stored but inactive."
+              : "Sandbox linking is active for test institutions."}
+        </span>
+      </div>
+      {isProduction && !productionLocked && (
+        <label className="confirm-check">
+          <input
+            type="checkbox"
+            checked={productionConfirmed}
+            onChange={(event) => setProductionConfirmed(event.target.checked)}
+          />
+          <span>I understand this will connect real financial institutions and store real financial data locally.</span>
+        </label>
+      )}
+      <button type="button" disabled={!canOpenLink} onClick={prepareLink}>
+        {buttonLabel}
       </button>
       {error && <span className="error-text">{error}</span>}
     </div>
@@ -569,7 +614,16 @@ function App() {
       ["Backend", health?.ok ? "Online" : "Checking"],
       ["Security", health?.secure_config_present ? "Ready" : "Needs setup"],
       ["OpenAI", health?.openai_key_configured ? "Ready" : "Needs setup"],
-      ["Plaid", health?.plaid_configured ? "Ready" : "Needs setup"],
+      [
+        "Plaid",
+        !health?.plaid_configured
+          ? "Needs setup"
+          : health.plaid_environment === "production"
+            ? health.plaid_production_locked
+              ? "Production locked"
+              : "Production ready"
+            : "Sandbox ready",
+      ],
     ],
     [health],
   );
@@ -639,6 +693,20 @@ function App() {
   async function deletePlannedExpense(expenseId: string) {
     await apiRequest(`/planning/expenses/${expenseId}`, { method: "DELETE" });
     await refresh();
+  }
+
+  async function disconnectPlaidItem(itemId: string) {
+    const confirmed = window.confirm(
+      "Disconnect this Plaid connection and delete its local accounts, balances, transactions, recurring streams, snapshots, sync history, and AI summaries?",
+    );
+    if (!confirmed) return;
+    setError("");
+    try {
+      await apiRequest(`/plaid/items/${itemId}`, { method: "DELETE" });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Plaid connection could not be disconnected");
+    }
   }
 
   return (
@@ -1001,21 +1069,37 @@ function App() {
             <section className="panel">
               <div className="panel-heading">
                 <div>
-                  <p>Plaid Sandbox</p>
+                  <p>Plaid {health?.plaid_environment === "production" ? "Production" : "Sandbox"}</p>
                   <h2>Connections</h2>
                 </div>
               </div>
-              <PlaidConnector enabled={Boolean(health?.plaid_configured)} onConnected={refresh} />
+              <PlaidConnector
+                configured={Boolean(health?.plaid_configured)}
+                environment={health?.plaid_environment ?? "sandbox"}
+                productionLocked={Boolean(health?.plaid_production_locked)}
+                productionLinkingEnabled={Boolean(health?.plaid_production_linking_enabled)}
+                productionSecretPresent={Boolean(health?.plaid_production_secret_present)}
+                onConnected={refresh}
+              />
               <div className="button-row sync-block">
                 <button type="button" disabled={items.length === 0 || syncing} onClick={runSync}>
-                  {syncing ? "Syncing..." : "Sync Sandbox Data"}
+                  {syncing ? "Syncing..." : "Sync Plaid Data"}
                 </button>
               </div>
               <div className="item-list">
                 {items.map((item) => (
                   <div key={item.item_id}>
-                    <strong>{item.status}</strong>
-                    <span>{item.last_successful_sync_at ?? item.created_at ?? item.item_id}</span>
+                    <div>
+                      <strong>{item.status}</strong>
+                      <span>{item.last_successful_sync_at ?? item.created_at ?? item.item_id}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-button danger-text"
+                      onClick={() => void disconnectPlaidItem(item.item_id)}
+                    >
+                      Disconnect & delete
+                    </button>
                   </div>
                 ))}
               </div>

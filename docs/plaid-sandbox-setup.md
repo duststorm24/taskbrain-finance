@@ -42,6 +42,7 @@ The expected values are:
 
 ```text
 PLAID_ENV=sandbox
+PLAID_ALLOW_PRODUCTION_LINKING=false
 PLAID_CLIENT_ID=...
 PLAID_SANDBOX_SECRET=...
 ```
@@ -52,7 +53,7 @@ If production access is approved, store the production credential separately:
 PLAID_PRODUCTION_SECRET=...
 ```
 
-Leave `PLAID_ENV=sandbox` until you intentionally switch to real institutions.
+Leave `PLAID_ENV=sandbox` and `PLAID_ALLOW_PRODUCTION_LINKING=false` until you intentionally switch to real institutions.
 
 ## 4. Connect Test Institution
 

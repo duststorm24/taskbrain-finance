@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     plaid_secret: str = Field(default="", validation_alias="PLAID_SECRET")
     plaid_sandbox_secret: str = Field(default="", validation_alias="PLAID_SANDBOX_SECRET")
     plaid_production_secret: str = Field(default="", validation_alias="PLAID_PRODUCTION_SECRET")
+    plaid_allow_production_linking: bool = Field(default=False, validation_alias="PLAID_ALLOW_PRODUCTION_LINKING")
     plaid_products: str = Field(default="transactions", validation_alias="PLAID_PRODUCTS")
     plaid_optional_products: str = Field(default="investments,liabilities", validation_alias="PLAID_OPTIONAL_PRODUCTS")
 
@@ -48,14 +49,26 @@ class Settings(BaseSettings):
         return self.env.lower() not in {"development", "local", "test"}
 
     @property
+    def normalized_plaid_env(self) -> str:
+        return self.plaid_env.lower().strip()
+
+    @property
     def active_plaid_secret(self) -> str:
-        if self.plaid_env == "production":
+        if self.normalized_plaid_env == "production":
             return self.plaid_production_secret or self.plaid_secret
         return self.plaid_sandbox_secret or self.plaid_secret
 
     @property
     def plaid_configured(self) -> bool:
         return bool(self.plaid_client_id and self.active_plaid_secret)
+
+    @property
+    def plaid_production_locked(self) -> bool:
+        return self.normalized_plaid_env == "production" and not self.plaid_allow_production_linking
+
+    @property
+    def plaid_linking_enabled(self) -> bool:
+        return self.plaid_configured and not self.plaid_production_locked
 
     def validate_runtime_security(self) -> None:
         if not self.is_securely_configured:
