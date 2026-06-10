@@ -1,0 +1,18 @@
+taskbrain.local {
+  encode gzip
+
+  handle_path /api/finance/* {
+    reverse_proxy 127.0.0.1:8090
+  }
+
+  handle_path /finance/* {
+    root * /opt/taskbrain/finance/frontend/dist
+    try_files {path} /index.html
+    file_server
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:8080
+  }
+}
+

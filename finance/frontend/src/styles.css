@@ -1,0 +1,359 @@
+:root {
+  color: #182235;
+  background: #f4f6f8;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #172033;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #cdd6e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #182235;
+}
+
+.finance-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.finance-header,
+.status-grid,
+.summary-grid,
+.control-grid,
+.chart-grid,
+.planning-grid,
+.workspace-grid,
+.page-error,
+.auth-panel {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.finance-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.finance-header p,
+.panel-heading p {
+  margin: 0 0 5px;
+  color: #5d6879;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.finance-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  letter-spacing: 0;
+}
+
+.timeline-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(4, minmax(78px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.timeline-tabs button {
+  min-height: 34px;
+  background: transparent;
+  color: #526070;
+}
+
+.timeline-tabs button.active {
+  background: #172033;
+  color: #fff;
+}
+
+.status-grid,
+.summary-grid,
+.control-grid,
+.chart-grid,
+.planning-grid,
+.workspace-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.status-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.control-grid,
+.planning-grid,
+.workspace-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.chart-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.wide-panel {
+  grid-column: 1 / -1;
+}
+
+.panel,
+.metric-panel,
+.status-grid article {
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.panel {
+  padding: 18px;
+}
+
+.metric-panel,
+.status-grid article {
+  min-height: 92px;
+  padding: 16px;
+}
+
+.status-grid span,
+.metric-panel span,
+.money-grid span,
+.account-list span,
+.expense-list span,
+.category-list span,
+.stream-list span,
+.transaction-list span,
+.recommendation-list span,
+.item-list span {
+  display: block;
+  color: #5b6678;
+  line-height: 1.4;
+}
+
+.status-grid strong,
+.metric-panel strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.15rem;
+}
+
+.metric-panel strong {
+  font-size: 1.55rem;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.panel-heading h2 {
+  margin: 0;
+  font-size: 1.18rem;
+  letter-spacing: 0;
+}
+
+.chart-panel {
+  min-height: 372px;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.input-grid label,
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  color: #344154;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.auth-panel {
+  margin-top: 16px;
+}
+
+.auth-form,
+.button-row,
+.expense-form,
+.expense-list,
+.category-list,
+.stream-list,
+.transaction-list,
+.recommendation-list,
+.account-list,
+.item-list {
+  display: grid;
+  gap: 10px;
+}
+
+.expense-form {
+  grid-template-columns: minmax(140px, 1fr) minmax(126px, 0.8fr) minmax(96px, 0.65fr) minmax(112px, 0.75fr);
+}
+
+.expense-form button {
+  grid-column: 1 / -1;
+}
+
+.expense-list article,
+.category-list article,
+.stream-list article,
+.transaction-list article,
+.account-list article,
+.recommendation-list article,
+.item-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f6f8fb;
+}
+
+.expense-list article > div:last-child {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.category-list strong,
+.stream-list strong,
+.transaction-list strong {
+  text-transform: capitalize;
+}
+
+.money-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.money-grid div {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f6f8fb;
+}
+
+.money-grid strong,
+.asset-money,
+.debt-money {
+  font-weight: 850;
+}
+
+.asset-money {
+  color: #146c43;
+}
+
+.debt-money,
+.danger-text,
+.error-text,
+.page-error {
+  color: #b42318;
+}
+
+.text-button {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  color: #1f5fbf;
+}
+
+.sync-block {
+  margin: 10px 0;
+}
+
+.recharts-default-tooltip {
+  border-radius: 8px !important;
+  border-color: #d8e0ea !important;
+}
+
+.page-error {
+  margin-top: 12px;
+}
+
+@media (max-width: 1020px) {
+  .status-grid,
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .control-grid,
+  .chart-grid,
+  .planning-grid,
+  .workspace-grid,
+  .input-grid,
+  .expense-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .finance-shell {
+    padding: 16px;
+  }
+
+  .finance-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .timeline-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .status-grid,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,3 @@
+# Run daily finance sync at 4:30 AM local time.
+30 4 * * * cd /opt/taskbrain/finance/backend && ./.venv/bin/python -m app.jobs.daily_sync >> /opt/taskbrain/data/finance-sync.log 2>&1
+

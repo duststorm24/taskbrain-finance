@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# Local secrets and databases
+.env
+.env.local
+data/
+finance/backend/.env
+finance/backend/.env.local
+finance/backend/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend
+node_modules/
+dist/
+
+# Local logs
+*.log
