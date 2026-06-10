@@ -9,6 +9,8 @@ TaskBrain Finance handles sensitive personal financial data, so the default oper
 - Do not expose the FastAPI backend directly to the public internet.
 - Do not commit `.env`, SQLite databases, logs, build output, or dependency folders.
 
+See `docs/security-program.md` for the current information security policy, access-control policy, MFA policy, retention policy, vulnerability management process, patch SLA, and access review process.
+
 ## Secrets
 
 Secrets must be stored in environment variables or an uncommitted `.env` file:
@@ -23,6 +25,14 @@ Secrets must be stored in environment variables or an uncommitted `.env` file:
 The committed `.env.example` file contains placeholders only.
 
 The backend validates startup settings and refuses to run with placeholder session-signing or token-encryption secrets.
+
+## Authentication And Access Control
+
+- The first registered user is the initial owner.
+- Later registered users default to member access.
+- Disabled users cannot log in or continue using existing sessions.
+- Authenticator-app MFA is required before Plaid Link can be opened.
+- The backend prevents removing the last active owner.
 
 ## Plaid Token Handling
 

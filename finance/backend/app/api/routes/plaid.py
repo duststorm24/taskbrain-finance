@@ -44,6 +44,7 @@ def items(user: User = Depends(current_user), db: Session = Depends(get_db)) -> 
 
 @router.post("/link-token", response_model=LinkTokenResponse)
 def link_token(user: User = Depends(current_user)) -> LinkTokenResponse:
+    _require_mfa_for_plaid_link(user)
     settings = get_settings()
     if not settings.plaid_configured:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Plaid is not configured")
@@ -61,6 +62,7 @@ def exchange_public_token(
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ) -> PlaidItemResponse:
+    _require_mfa_for_plaid_link(user)
     settings = get_settings()
     if not settings.plaid_linking_enabled:
         raise HTTPException(
@@ -132,3 +134,11 @@ def disconnect_item(
     db.delete(plaid_item)
     db.commit()
     return PlaidItemResponse(item_id=item_id, status="disconnected")
+
+
+def _require_mfa_for_plaid_link(user: User) -> None:
+    if not user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Enable account MFA before connecting financial institutions.",
+        )

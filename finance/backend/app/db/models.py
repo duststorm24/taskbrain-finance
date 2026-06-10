@@ -12,6 +12,13 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     timezone: Mapped[str] = mapped_column(String, nullable=False, default="America/Chicago")
+    role: Mapped[str] = mapped_column(String, nullable=False, default="member")
+    status: Mapped[str] = mapped_column(String, nullable=False, default="active")
+    mfa_enabled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    mfa_totp_secret_encrypted: Mapped[str | None] = mapped_column(Text)
+    mfa_enabled_at: Mapped[str | None] = mapped_column(String)
+    last_login_at: Mapped[str | None] = mapped_column(String)
+    deactivated_at: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
     updated_at: Mapped[str] = mapped_column(String, nullable=False)
 

@@ -39,10 +39,18 @@ type UserResponse = {
   email: string;
   display_name: string;
   timezone: string;
+  role: string;
+  status: string;
+  mfa_enabled: boolean;
 };
 
 type SessionResponse = {
   user: UserResponse;
+};
+
+type MfaSetupResponse = {
+  secret: string;
+  otpauth_uri: string;
 };
 
 type PlaidItem = {
@@ -239,7 +247,14 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || `Request failed with ${response.status}`);
+    let errorMessage = errorText || `Request failed with ${response.status}`;
+    try {
+      const parsed = JSON.parse(errorText) as { detail?: string };
+      errorMessage = parsed.detail || errorMessage;
+    } catch {
+      // Keep the raw response text when the body is not JSON.
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json() as Promise<T>;
@@ -321,6 +336,7 @@ function PlaidConnector({
   productionLocked,
   productionLinkingEnabled,
   productionSecretPresent,
+  mfaEnabled,
   onConnected,
 }: {
   configured: boolean;
@@ -328,13 +344,14 @@ function PlaidConnector({
   productionLocked: boolean;
   productionLinkingEnabled: boolean;
   productionSecretPresent: boolean;
+  mfaEnabled: boolean;
   onConnected: () => void;
 }) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [productionConfirmed, setProductionConfirmed] = useState(false);
   const [error, setError] = useState("");
   const isProduction = environment === "production";
-  const canOpenLink = configured && !productionLocked && (!isProduction || (productionLinkingEnabled && productionConfirmed));
+  const canOpenLink = mfaEnabled && configured && !productionLocked && (!isProduction || (productionLinkingEnabled && productionConfirmed));
   const buttonLabel = isProduction ? "Connect production account" : "Connect sandbox account";
 
   async function prepareLink() {
@@ -366,10 +383,12 @@ function PlaidConnector({
 
   return (
     <div className="connector-stack">
-      <div className={isProduction ? "safety-callout danger-callout" : "safety-callout"}>
-        <strong>{isProduction ? "Production mode" : "Sandbox mode"}</strong>
+      <div className={!mfaEnabled || isProduction ? "safety-callout danger-callout" : "safety-callout"}>
+        <strong>{!mfaEnabled ? "MFA required" : isProduction ? "Production mode" : "Sandbox mode"}</strong>
         <span>
-          {isProduction
+          {!mfaEnabled
+            ? "Enable authenticator MFA before opening Plaid Link or connecting financial institutions."
+            : isProduction
             ? productionLocked
               ? "Real institution linking is locked. Production credentials are stored, but the backend will reject new production connections until you intentionally enable them."
               : "Real institution linking is available. Confirm below before opening Plaid Link."
@@ -436,6 +455,8 @@ function AuthPanel({
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [showTotp, setShowTotp] = useState(false);
   const [error, setError] = useState("");
 
   async function submit(event: React.FormEvent) {
@@ -446,15 +467,18 @@ function AuthPanel({
       const body =
         mode === "register"
           ? { email, display_name: displayName, password, timezone: "America/Chicago" }
-          : { email, password };
+          : { email, password, totp_code: totpCode || null };
       const session = await apiRequest<SessionResponse>(endpoint, {
         method: "POST",
         body: JSON.stringify(body),
       });
       setPassword("");
+      setTotpCode("");
       onSession(session);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed");
+      const message = err instanceof Error ? err.message : "Authentication failed";
+      if (message.toLowerCase().includes("authenticator")) setShowTotp(true);
+      setError(message);
     }
   }
 
@@ -491,6 +515,17 @@ function AuthPanel({
             autoComplete={mode === "register" ? "new-password" : "current-password"}
           />
         </label>
+        {mode === "login" && showTotp && (
+          <label>
+            Authenticator code
+            <input
+              value={totpCode}
+              onChange={(event) => setTotpCode(event.target.value)}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+            />
+          </label>
+        )}
         <button type="submit">{mode === "register" ? "Create User" : "Sign In"}</button>
         {error && <span className="error-text">{error}</span>}
       </form>
@@ -521,6 +556,10 @@ function App() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisRunning, setAnalysisRunning] = useState<AnalysisMode | null>(null);
   const [selectedSummaryId, setSelectedSummaryId] = useState("");
+  const [mfaSetup, setMfaSetup] = useState<MfaSetupResponse | null>(null);
+  const [mfaEnableCode, setMfaEnableCode] = useState("");
+  const [mfaDisablePassword, setMfaDisablePassword] = useState("");
+  const [mfaDisableCode, setMfaDisableCode] = useState("");
 
   const [monthlyIncome, setMonthlyIncome] = useState(5200);
   const [fixedSpend, setFixedSpend] = useState(2800);
@@ -814,6 +853,49 @@ function App() {
       setError(err instanceof Error ? err.message : "AI analysis failed");
     } finally {
       setAnalysisRunning(null);
+    }
+  }
+
+  async function startMfaSetup() {
+    setError("");
+    try {
+      const setup = await apiRequest<MfaSetupResponse>("/auth/mfa/setup", { method: "POST" });
+      setMfaSetup(setup);
+      setMfaEnableCode("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "MFA setup failed");
+    }
+  }
+
+  async function enableMfa(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    try {
+      await apiRequest("/auth/mfa/enable", {
+        method: "POST",
+        body: JSON.stringify({ totp_code: mfaEnableCode }),
+      });
+      setMfaSetup(null);
+      setMfaEnableCode("");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "MFA enable failed");
+    }
+  }
+
+  async function disableMfa(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    try {
+      await apiRequest("/auth/mfa/disable", {
+        method: "POST",
+        body: JSON.stringify({ password: mfaDisablePassword, totp_code: mfaDisableCode }),
+      });
+      setMfaDisablePassword("");
+      setMfaDisableCode("");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "MFA disable failed");
     }
   }
 
@@ -1298,6 +1380,76 @@ function App() {
           </section>
 
           <section className="workspace-grid">
+            <section className="panel security-panel">
+              <div className="panel-heading">
+                <div>
+                  <p>Account Security</p>
+                  <h2>Authenticator MFA</h2>
+                </div>
+                <strong className={session.user.mfa_enabled ? "asset-money" : "debt-money"}>
+                  {session.user.mfa_enabled ? "Enabled" : "Required"}
+                </strong>
+              </div>
+              {session.user.mfa_enabled ? (
+                <form className="mfa-form" onSubmit={disableMfa}>
+                  <div className="safety-callout">
+                    <strong>MFA is active</strong>
+                    <span>New bank connections require this account security control before Plaid Link can open.</span>
+                  </div>
+                  <input
+                    type="password"
+                    value={mfaDisablePassword}
+                    onChange={(event) => setMfaDisablePassword(event.target.value)}
+                    placeholder="Password"
+                    autoComplete="current-password"
+                  />
+                  <input
+                    value={mfaDisableCode}
+                    onChange={(event) => setMfaDisableCode(event.target.value)}
+                    placeholder="Authenticator code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                  />
+                  <button type="submit" className="secondary-danger">
+                    Disable MFA
+                  </button>
+                </form>
+              ) : (
+                <div className="mfa-form">
+                  <div className="safety-callout danger-callout">
+                    <strong>MFA is required before Plaid Link</strong>
+                    <span>Use an authenticator app to protect bank linking and future beta access.</span>
+                  </div>
+                  {!mfaSetup ? (
+                    <button type="button" onClick={() => void startMfaSetup()}>
+                      Set Up MFA
+                    </button>
+                  ) : (
+                    <form className="mfa-form" onSubmit={enableMfa}>
+                      <label>
+                        Manual setup key
+                        <input readOnly value={mfaSetup.secret} onFocus={(event) => event.target.select()} />
+                      </label>
+                      <label>
+                        Authenticator URI
+                        <textarea readOnly value={mfaSetup.otpauth_uri} onFocus={(event) => event.target.select()} />
+                      </label>
+                      <label>
+                        Verification code
+                        <input
+                          value={mfaEnableCode}
+                          onChange={(event) => setMfaEnableCode(event.target.value)}
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                        />
+                      </label>
+                      <button type="submit">Enable MFA</button>
+                    </form>
+                  )}
+                </div>
+              )}
+            </section>
+
             <section className="panel">
               <div className="panel-heading">
                 <div>
@@ -1311,6 +1463,7 @@ function App() {
                 productionLocked={Boolean(health?.plaid_production_locked)}
                 productionLinkingEnabled={Boolean(health?.plaid_production_linking_enabled)}
                 productionSecretPresent={Boolean(health?.plaid_production_secret_present)}
+                mfaEnabled={Boolean(session.user.mfa_enabled)}
                 onConnected={refresh}
               />
               <div className="button-row sync-block">

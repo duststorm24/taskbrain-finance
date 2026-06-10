@@ -10,6 +10,8 @@ This project is built for read-only personal financial analysis. It does not ini
 - Local React/Vite frontend under `finance/frontend`
 - SQLite database for the first implementation
 - Plaid Link sandbox connection flow with production-linking safety lock
+- Authenticator-app MFA gate before Plaid Link can open
+- Owner/member access-control foundation with user disable support
 - Encrypted Plaid access-token storage
 - Plaid disconnect/delete control for revoking access and removing local synced data
 - Account, transaction, recurring-stream, cash-flow, planning, and sync foundations
@@ -37,8 +39,10 @@ The app does not request Plaid Payments, Transfer, Auth, Identity, Signal, or ot
 - Plaid access tokens are encrypted before being stored in SQLite
 - Plaid access tokens are never exposed to the browser
 - Production Plaid linking requires both `PLAID_ENV=production` and `PLAID_ALLOW_PRODUCTION_LINKING=true`
+- Plaid Link requires the signed-in user to enable MFA first
 - OpenAI analysis receives sanitized financial context only, not raw secrets, Plaid tokens, API keys, account numbers, or unnecessary transaction detail
 - Deep AI analysis is intended for initial setup after linking institutions, then occasional yearly baseline updates
+- The current security program is documented in `docs/security-program.md`
 
 ## Repository Layout
 

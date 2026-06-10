@@ -244,6 +244,7 @@ textarea {
 .connector-stack,
 .expense-form,
 .goal-form,
+.mfa-form,
 .expense-list,
 .goal-list,
 .category-list,
@@ -272,6 +273,11 @@ textarea {
 .goal-form textarea,
 .goal-form button {
   grid-column: 1 / -1;
+}
+
+.mfa-form {
+  display: grid;
+  gap: 10px;
 }
 
 .expense-list article,
@@ -339,6 +345,12 @@ textarea {
   padding: 0;
   background: transparent;
   color: #1f5fbf;
+}
+
+.secondary-danger {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b42318;
 }
 
 .privacy-link {

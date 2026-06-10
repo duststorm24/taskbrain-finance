@@ -14,16 +14,18 @@ def get_user_by_id(db: Session, user_id: str) -> User | None:
 
 def create_user(db: Session, *, email: str, display_name: str, password: str, timezone: str = "America/Chicago") -> User:
     now = utcnow()
+    first_user = db.query(User.id).first() is None
     user = User(
         id=new_id(),
         email=email.lower(),
         display_name=display_name,
         password_hash=hash_password(password),
         timezone=timezone,
+        role="owner" if first_user else "member",
+        status="active",
         created_at=now,
         updated_at=now,
     )
     db.add(user)
     db.flush()
     return user
-
