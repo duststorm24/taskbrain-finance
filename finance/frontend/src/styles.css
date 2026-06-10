@@ -70,6 +70,12 @@ input {
   margin-bottom: 18px;
 }
 
+.header-actions {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
 .finance-header p,
 .panel-heading p {
   margin: 0 0 5px;
@@ -224,6 +230,7 @@ input {
 }
 
 .auth-form,
+.auth-footer,
 .button-row,
 .expense-form,
 .expense-list,
@@ -309,6 +316,59 @@ input {
   color: #1f5fbf;
 }
 
+.privacy-link {
+  font-size: 0.9rem;
+}
+
+.auth-footer {
+  margin-top: 16px;
+  color: #5b6678;
+  font-size: 0.9rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.privacy-modal {
+  width: min(760px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.24);
+}
+
+.policy-date {
+  margin: 0 0 14px;
+  color: #5b6678;
+  font-size: 0.9rem;
+}
+
+.policy-content {
+  display: grid;
+  gap: 12px;
+}
+
+.policy-content h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.policy-content p {
+  margin: 0;
+  color: #3c4757;
+  line-height: 1.55;
+}
+
 .sync-block {
   margin: 10px 0;
 }
@@ -346,6 +406,10 @@ input {
   .finance-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .header-actions {
+    justify-items: stretch;
   }
 
   .timeline-tabs {

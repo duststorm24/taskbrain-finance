@@ -141,6 +141,43 @@ const timelineMonths: Record<Timeline, number> = {
   all: 36,
 };
 
+const privacyPolicySections = [
+  {
+    title: "What TaskBrain Finance is",
+    body:
+      "TaskBrain Finance is a self-hosted personal finance dashboard used to organize account balances, transactions, recurring expenses, investments, debts, planned expenses, cash flow, and net worth. It is intended to run locally on a private machine and is not designed for public internet exposure.",
+  },
+  {
+    title: "Data collected with your consent",
+    body:
+      "When you connect an institution through Plaid Link, the app may receive account metadata, balances, transactions, recurring transaction streams, investment holdings and investment transactions, and liability details such as loans or credit card balances. The app may also store planning inputs you enter directly, such as future one-time expenses, budget categories, notes, and forecast assumptions.",
+  },
+  {
+    title: "How the data is used",
+    body:
+      "Financial data is used to show dashboards, charts, budget tracking, cash flow forecasts, debt and investment views, recurring expense summaries, and personal financial recommendations. The app does not initiate payments, transfers, account changes, or trades.",
+  },
+  {
+    title: "Storage and security",
+    body:
+      "Data is stored locally in SQLite on the machine running the application. Plaid access tokens and other sensitive integration tokens are encrypted before storage using an application encryption key. API keys and application secrets are loaded from environment variables and are not committed to the public code repository.",
+  },
+  {
+    title: "Sharing and AI analysis",
+    body:
+      "TaskBrain Finance does not sell consumer financial data. Plaid is used to retrieve financial data after consent through Plaid Link. OpenAI may be used to generate summaries or recommendations from selected financial context; prompts should avoid unnecessary sensitive identifiers where possible.",
+  },
+  {
+    title: "Retention and deletion",
+    body:
+      "Data remains on the local system until it is deleted by the owner/operator. Because this is a self-hosted application, deleting local database files or disconnecting Plaid Items removes local access to stored financial data. Formal in-app deletion and retention controls are planned before any broader multi-user release.",
+  },
+  {
+    title: "Contact",
+    body: "Questions about this privacy policy or data handling can be sent to dustin.varcoe@outlook.com.",
+  },
+];
+
 async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
@@ -261,7 +298,42 @@ function PlaidConnector({ enabled, onConnected }: { enabled: boolean; onConnecte
   );
 }
 
-function AuthPanel({ onSession }: { onSession: (session: SessionResponse) => void }) {
+function PrivacyPolicyDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
+        <div className="panel-heading">
+          <div>
+            <p>Privacy Policy</p>
+            <h2 id="privacy-title">TaskBrain Finance</h2>
+          </div>
+          <button type="button" className="text-button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <p className="policy-date">Last updated June 10, 2026</p>
+        <div className="policy-content">
+          {privacyPolicySections.map((section) => (
+            <article key={section.title}>
+              <h3>{section.title}</h3>
+              <p>{section.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AuthPanel({
+  onSession,
+  onPrivacy,
+}: {
+  onSession: (session: SessionResponse) => void;
+  onPrivacy: () => void;
+}) {
   const [mode, setMode] = useState<"register" | "login">("register");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -324,6 +396,12 @@ function AuthPanel({ onSession }: { onSession: (session: SessionResponse) => voi
         <button type="submit">{mode === "register" ? "Create User" : "Sign In"}</button>
         {error && <span className="error-text">{error}</span>}
       </form>
+      <div className="auth-footer">
+        <span>Review how local financial data is handled before connecting accounts.</span>
+        <button type="button" className="text-button privacy-link" onClick={onPrivacy}>
+          Privacy Policy
+        </button>
+      </div>
     </section>
   );
 }
@@ -339,6 +417,7 @@ function App() {
   const [timeline, setTimeline] = useState<Timeline>("year");
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   const [monthlyIncome, setMonthlyIncome] = useState(5200);
   const [fixedSpend, setFixedSpend] = useState(2800);
@@ -569,19 +648,26 @@ function App() {
           <p>TaskBrain</p>
           <h1>Financial Intelligence</h1>
         </div>
-        <div className="timeline-tabs" aria-label="Timeline">
-          {(["month", "quarter", "year", "all"] as Timeline[]).map((value) => (
-            <button
-              key={value}
-              type="button"
-              className={timeline === value ? "active" : ""}
-              onClick={() => setTimeline(value)}
-            >
-              {value === "all" ? "All" : value[0].toUpperCase() + value.slice(1)}
-            </button>
-          ))}
+        <div className="header-actions">
+          <button type="button" className="text-button privacy-link" onClick={() => setPrivacyOpen(true)}>
+            Privacy Policy
+          </button>
+          <div className="timeline-tabs" aria-label="Timeline">
+            {(["month", "quarter", "year", "all"] as Timeline[]).map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={timeline === value ? "active" : ""}
+                onClick={() => setTimeline(value)}
+              >
+                {value === "all" ? "All" : value[0].toUpperCase() + value.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
+
+      <PrivacyPolicyDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
 
       <section className="status-grid" aria-label="Finance module status">
         {statusCards.map(([label, value]) => (
@@ -596,6 +682,7 @@ function App() {
 
       {!session ? (
           <AuthPanel
+            onPrivacy={() => setPrivacyOpen(true)}
             onSession={(nextSession) => {
               setSession(nextSession);
               void refresh();
