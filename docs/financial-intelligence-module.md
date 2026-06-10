@@ -1231,7 +1231,7 @@ export function ConnectPlaidButton() {
 - Tailscale remote access only.
 - Bind backend to localhost and expose through a reverse proxy.
 - Use HTTPS for Tailscale-hosted access if possible.
-- Store `PLAID_SECRET`, `OPENAI_API_KEY`, `SESSION_SECRET`, and `TOKEN_ENCRYPTION_KEY` in environment variables.
+- Store `PLAID_SANDBOX_SECRET`, `PLAID_PRODUCTION_SECRET`, `OPENAI_API_KEY`, `SESSION_SECRET`, and `TOKEN_ENCRYPTION_KEY` in environment variables.
 - Store Plaid access tokens encrypted at rest.
 - Hash local passwords with Argon2id.
 - Use HTTP-only, SameSite session cookies.

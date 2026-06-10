@@ -15,7 +15,8 @@ Secrets must be stored in environment variables or an uncommitted `.env` file:
 
 - `OPENAI_API_KEY`
 - `PLAID_CLIENT_ID`
-- `PLAID_SECRET`
+- `PLAID_SANDBOX_SECRET`
+- `PLAID_PRODUCTION_SECRET`
 - `TASKBRAIN_FINANCE_SESSION_SECRET`
 - `TASKBRAIN_FINANCE_TOKEN_ENCRYPTION_KEY`
 

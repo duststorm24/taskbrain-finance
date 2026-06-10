@@ -36,7 +36,7 @@ def items(user: User = Depends(current_user), db: Session = Depends(get_db)) -> 
 @router.post("/link-token", response_model=LinkTokenResponse)
 def link_token(user: User = Depends(current_user)) -> LinkTokenResponse:
     settings = get_settings()
-    if not settings.plaid_client_id or not settings.plaid_secret:
+    if not settings.plaid_configured:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Plaid is not configured")
     return LinkTokenResponse(link_token=create_link_token(user.id))
 

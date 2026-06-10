@@ -24,7 +24,7 @@ def _client() -> plaid_api.PlaidApi:
         host=host,
         api_key={
             "clientId": settings.plaid_client_id,
-            "secret": settings.plaid_secret,
+            "secret": settings.active_plaid_secret,
         },
     )
     config.ssl_ca_cert = certifi.where()
