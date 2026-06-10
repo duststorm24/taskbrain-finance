@@ -42,6 +42,9 @@ type UserResponse = {
   role: string;
   status: string;
   mfa_enabled: boolean;
+  created_at: string;
+  last_login_at?: string | null;
+  deactivated_at?: string | null;
 };
 
 type SessionResponse = {
@@ -51,6 +54,41 @@ type SessionResponse = {
 type MfaSetupResponse = {
   secret: string;
   otpauth_uri: string;
+};
+
+type AuditEvent = {
+  id: string;
+  actor_user_id?: string | null;
+  target_user_id?: string | null;
+  action: string;
+  outcome: string;
+  metadata_json: string;
+  created_at: string;
+};
+
+type AccessReviewUser = {
+  id: string;
+  user_id: string;
+  email: string;
+  display_name: string;
+  role: string;
+  status: string;
+  mfa_enabled: boolean;
+  last_login_at?: string | null;
+  decision: string;
+  notes?: string | null;
+};
+
+type AccessReview = {
+  id: string;
+  owner_user_id?: string | null;
+  period_start: string;
+  period_end: string;
+  status: string;
+  notes?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+  users: AccessReviewUser[];
 };
 
 type PlaidItem = {
@@ -549,6 +587,8 @@ function App() {
   const [plannedExpenses, setPlannedExpenses] = useState<PlannedExpense[]>([]);
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
   const [aiSummaries, setAiSummaries] = useState<AiSummary[]>([]);
+  const [accessReviews, setAccessReviews] = useState<AccessReview[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [timeline, setTimeline] = useState<Timeline>("year");
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
@@ -560,6 +600,7 @@ function App() {
   const [mfaEnableCode, setMfaEnableCode] = useState("");
   const [mfaDisablePassword, setMfaDisablePassword] = useState("");
   const [mfaDisableCode, setMfaDisableCode] = useState("");
+  const [securityActionRunning, setSecurityActionRunning] = useState("");
 
   const [monthlyIncome, setMonthlyIncome] = useState(5200);
   const [fixedSpend, setFixedSpend] = useState(2800);
@@ -593,6 +634,8 @@ function App() {
     () => aiSummaries.find((summary) => summary.id === selectedSummaryId) ?? aiSummaries[0] ?? null,
     [aiSummaries, selectedSummaryId],
   );
+  const openAccessReview = accessReviews.find((review) => review.status === "open") ?? null;
+  const latestCompletedReview = accessReviews.find((review) => review.status === "completed") ?? null;
 
   const netWorthSeries = useMemo(() => {
     const currentNetWorth = netWorth?.currentNetWorthCents ?? 0;
@@ -753,6 +796,15 @@ function App() {
         setFinancialGoals(goalResponse.goals);
         const summaryResponse = await apiRequest<{ summaries: AiSummary[] }>("/ai/summaries");
         setAiSummaries(summaryResponse.summaries);
+        if (currentSession.user.role === "owner") {
+          const reviewResponse = await apiRequest<{ reviews: AccessReview[] }>("/security/access-reviews");
+          setAccessReviews(reviewResponse.reviews);
+          const auditResponse = await apiRequest<{ events: AuditEvent[] }>("/security/audit-events?limit=25");
+          setAuditEvents(auditResponse.events);
+        } else {
+          setAccessReviews([]);
+          setAuditEvents([]);
+        }
       } catch {
         setSession(null);
         setItems([]);
@@ -762,6 +814,8 @@ function App() {
         setPlannedExpenses([]);
         setFinancialGoals([]);
         setAiSummaries([]);
+        setAccessReviews([]);
+        setAuditEvents([]);
         setSelectedSummaryId("");
       }
     } catch (err) {
@@ -896,6 +950,42 @@ function App() {
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "MFA disable failed");
+    }
+  }
+
+  async function startAccessReview() {
+    setSecurityActionRunning("start-review");
+    setError("");
+    try {
+      await apiRequest("/security/access-reviews", {
+        method: "POST",
+        body: JSON.stringify({ notes: "Owner-initiated access review from TaskBrain Finance dashboard." }),
+      });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Access review could not be started");
+    } finally {
+      setSecurityActionRunning("");
+    }
+  }
+
+  async function completeAccessReview(reviewId: string) {
+    const confirmed = window.confirm(
+      "Complete this access review? This records that you reviewed the listed users, roles, account status, MFA state, and recent login activity.",
+    );
+    if (!confirmed) return;
+    setSecurityActionRunning(`complete-${reviewId}`);
+    setError("");
+    try {
+      await apiRequest(`/security/access-reviews/${reviewId}/complete`, {
+        method: "POST",
+        body: JSON.stringify({ notes: "Reviewed active users, roles, MFA state, and recent account activity." }),
+      });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Access review could not be completed");
+    } finally {
+      setSecurityActionRunning("");
     }
   }
 
@@ -1142,6 +1232,78 @@ function App() {
                 )}
               </div>
             </section>
+
+            {session.user.role === "owner" && (
+              <section className="panel wide-panel security-ops-panel">
+                <div className="panel-heading">
+                  <div>
+                    <p>Security Operations</p>
+                    <h2>Access Reviews</h2>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={Boolean(openAccessReview) || securityActionRunning === "start-review"}
+                    onClick={() => void startAccessReview()}
+                  >
+                    {securityActionRunning === "start-review" ? "Starting..." : "Start Review"}
+                  </button>
+                </div>
+                <div className="security-review-grid">
+                  <div className="review-status-box">
+                    <strong>{latestCompletedReview ? "Review evidence current" : "No completed review yet"}</strong>
+                    <span>
+                      {latestCompletedReview?.completed_at
+                        ? `Last completed ${formatDateTime(latestCompletedReview.completed_at)}`
+                        : "Start and complete one review before inviting beta users."}
+                    </span>
+                  </div>
+                  {openAccessReview && (
+                    <div className="review-status-box active-review">
+                      <strong>Open review</strong>
+                      <span>
+                        {openAccessReview.period_start} to {openAccessReview.period_end} / {openAccessReview.users.length} user
+                        {openAccessReview.users.length === 1 ? "" : "s"}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={securityActionRunning === `complete-${openAccessReview.id}`}
+                        onClick={() => void completeAccessReview(openAccessReview.id)}
+                      >
+                        {securityActionRunning === `complete-${openAccessReview.id}` ? "Completing..." : "Complete Review"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="security-user-list">
+                  {(openAccessReview ?? latestCompletedReview)?.users.slice(0, 8).map((reviewedUser) => (
+                    <article key={reviewedUser.id}>
+                      <div>
+                        <strong>{reviewedUser.display_name}</strong>
+                        <span>{reviewedUser.email}</span>
+                      </div>
+                      <span>{reviewedUser.role}</span>
+                      <span>{reviewedUser.status}</span>
+                      <span>{reviewedUser.mfa_enabled ? "MFA" : "No MFA"}</span>
+                      <span>{reviewedUser.last_login_at ? formatDateTime(reviewedUser.last_login_at) : "No login"}</span>
+                    </article>
+                  ))}
+                </div>
+                <div className="audit-event-list">
+                  <strong>Recent audit events</strong>
+                  {auditEvents.length ? (
+                    auditEvents.slice(0, 8).map((event) => (
+                      <article key={event.id}>
+                        <span>{event.action}</span>
+                        <span>{event.outcome}</span>
+                        <span>{formatDateTime(event.created_at)}</span>
+                      </article>
+                    ))
+                  ) : (
+                    <span>No audit events yet.</span>
+                  )}
+                </div>
+              </section>
+            )}
 
             <section className="panel">
               <div className="panel-heading">

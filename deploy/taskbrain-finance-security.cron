@@ -1,0 +1,5 @@
+# Run security evidence checks every Monday at 3:15 AM local time.
+15 3 * * 1 cd /opt/taskbrain && /opt/taskbrain/finance/backend/.venv/bin/python finance/backend/scripts/security_audit.py >> /opt/taskbrain/data/finance-security-audit.log 2>&1
+
+# Disable inactive non-owner application users daily at 3:45 AM local time.
+45 3 * * * cd /opt/taskbrain/finance/backend && ./.venv/bin/python scripts/deprovision_inactive_users.py >> /opt/taskbrain/data/finance-deprovision.log 2>&1

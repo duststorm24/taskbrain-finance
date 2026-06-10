@@ -184,6 +184,9 @@ textarea {
 .stream-list span,
 .transaction-list span,
 .recommendation-list span,
+.security-review-grid span,
+.security-user-list span,
+.audit-event-list span,
 .item-list span {
   display: block;
   color: #5b6678;
@@ -253,6 +256,9 @@ textarea {
 .recommendation-list,
 .account-list,
 .item-list,
+.security-review-grid,
+.security-user-list,
+.audit-event-list,
 .analysis-menu {
   display: grid;
   gap: 10px;
@@ -287,6 +293,9 @@ textarea {
 .transaction-list article,
 .account-list article,
 .recommendation-list article,
+.review-status-box,
+.security-user-list article,
+.audit-event-list article,
 .item-list > div,
 .analysis-option {
   display: flex;
@@ -296,6 +305,42 @@ textarea {
   padding: 12px;
   border-radius: 8px;
   background: #f6f8fb;
+}
+
+.security-ops-panel {
+  background: #fbfcfe;
+}
+
+.security-review-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.review-status-box,
+.audit-event-list article {
+  align-items: start;
+  flex-direction: column;
+}
+
+.active-review {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.security-user-list {
+  margin-bottom: 12px;
+}
+
+.security-user-list article,
+.audit-event-list article {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(4, minmax(72px, 0.8fr));
+  align-items: center;
+}
+
+.audit-event-list > strong {
+  display: block;
+  margin-bottom: 2px;
 }
 
 .expense-list article > div:last-child,
@@ -532,8 +577,14 @@ textarea {
   .planning-grid,
   .workspace-grid,
   .input-grid,
+  .security-review-grid,
   .expense-form,
   .goal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .security-user-list article,
+  .audit-event-list article {
     grid-template-columns: 1fr;
   }
 }

@@ -25,6 +25,55 @@ class User(Base):
     accounts: Mapped[list["Account"]] = relationship(back_populates="user")
 
 
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+    __table_args__ = (
+        Index("idx_audit_events_created", "created_at"),
+        Index("idx_audit_events_actor", "actor_user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    actor_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    target_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    outcome: Mapped[str] = mapped_column(String, nullable=False, default="success")
+    metadata_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class AccessReview(Base):
+    __tablename__ = "access_reviews"
+    __table_args__ = (Index("idx_access_reviews_status", "status", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    owner_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    period_start: Mapped[str] = mapped_column(String, nullable=False)
+    period_end: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="open")
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    completed_at: Mapped[str | None] = mapped_column(String)
+
+
+class AccessReviewUser(Base):
+    __tablename__ = "access_review_users"
+    __table_args__ = (UniqueConstraint("review_id", "user_id"),)
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    review_id: Mapped[str] = mapped_column(ForeignKey("access_reviews.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    email: Mapped[str] = mapped_column(String, nullable=False)
+    display_name: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    mfa_enabled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_login_at: Mapped[str | None] = mapped_column(String)
+    decision: Mapped[str] = mapped_column(String, nullable=False, default="pending")
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
 class Institution(Base):
     __tablename__ = "institutions"
 

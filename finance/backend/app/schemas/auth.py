@@ -48,6 +48,9 @@ class UserResponse(BaseModel):
     role: str
     status: str
     mfa_enabled: bool
+    created_at: str
+    last_login_at: str | None
+    deactivated_at: str | None
 
 
 class SessionResponse(BaseModel):

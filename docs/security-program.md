@@ -36,6 +36,8 @@ Rules:
 - The backend prevents removing the last active owner.
 - MFA is required before a user can create or exchange a Plaid Link token.
 - Secrets are stored only in environment variables or ignored local files.
+- Owner-only security endpoints expose recent audit events and access-review records.
+- Account registration, successful login, MFA changes, user access changes, Plaid connection changes, and access-review completion are written to an audit log.
 
 ## MFA Policy
 
@@ -82,6 +84,8 @@ Run the local security audit before production changes and at least monthly duri
 ./.venv/bin/python finance/backend/scripts/security_audit.py
 ```
 
+The audit includes local secret/config checks, runtime EOL/support checks, an inactive-user deprovisioning dry run, Python dependency auditing, and frontend dependency auditing.
+
 Patch targets:
 
 - Critical vulnerabilities: patch or mitigate within 7 days.
@@ -93,13 +97,13 @@ If a vulnerability cannot be patched inside the target window, document the reas
 
 ## End-Of-Life Software Policy
 
-The owner should review operating system, Python, Node.js, browser/runtime, and application dependency support status at least quarterly.
+The owner should review operating system, Python, Node.js, browser/runtime, and application dependency support status at least quarterly. The local security audit runs `finance/backend/scripts/eol_check.py` to record runtime support evidence.
 
 EOL software should be upgraded or removed before it reaches unsupported status whenever practical. Unsupported software that stores or processes consumer financial data must not be used for a public release without a documented compensating control and migration plan.
 
 ## Access Reviews And Deprovisioning
 
-Review user access at least quarterly during private beta.
+Review user access at least quarterly during private beta. The owner should create and complete an in-app access review before inviting beta users and then repeat the review quarterly or after any role/access change.
 
 Review items:
 
@@ -113,6 +117,7 @@ Review items:
 Deprovisioning steps:
 
 - Disable app users that no longer need access.
+- Run `finance/backend/scripts/deprovision_inactive_users.py` on a daily cron schedule to disable inactive non-owner app users.
 - Remove dashboard/platform access for people who no longer need it.
 - Revoke or rotate credentials if a device, account, or secret may be compromised.
 - Record the review date, reviewer, changes made, and follow-up actions.

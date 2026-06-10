@@ -20,6 +20,7 @@ from app.schemas.auth import (
     UserListResponse,
     UserResponse,
 )
+from app.services.audit_log import log_event
 
 
 router = APIRouter()
@@ -37,6 +38,7 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
         password=payload.password,
         timezone=payload.timezone,
     )
+    log_event(db, action="user.registered", actor_user_id=user.id, target_user_id=user.id, metadata={"role": user.role})
     db.commit()
     _set_session_cookie(response, user.id)
     return _session_response(user)
@@ -56,6 +58,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 
     user.last_login_at = utcnow()
     user.updated_at = utcnow()
+    log_event(db, action="user.login", actor_user_id=user.id, target_user_id=user.id, metadata={"mfa_used": bool(user.mfa_enabled)})
     db.commit()
     _set_session_cookie(response, user.id)
     return _session_response(user)
@@ -84,6 +87,7 @@ def mfa_setup(user: User = Depends(current_user), db: Session = Depends(get_db))
     user.mfa_enabled = 0
     user.mfa_enabled_at = None
     user.updated_at = utcnow()
+    log_event(db, action="mfa.setup.started", actor_user_id=user.id, target_user_id=user.id)
     db.commit()
     return MfaSetupResponse(secret=secret, otpauth_uri=make_totp_uri(secret, account_name=user.email))
 
@@ -101,6 +105,7 @@ def mfa_enable(
     user.mfa_enabled = 1
     user.mfa_enabled_at = now
     user.updated_at = now
+    log_event(db, action="mfa.enabled", actor_user_id=user.id, target_user_id=user.id)
     db.commit()
     return MfaStatusResponse(enabled=True, enabled_at=now)
 
@@ -118,6 +123,7 @@ def mfa_disable(
     user.mfa_totp_secret_encrypted = None
     user.mfa_enabled_at = None
     user.updated_at = utcnow()
+    log_event(db, action="mfa.disabled", actor_user_id=user.id, target_user_id=user.id)
     db.commit()
     return MfaStatusResponse(enabled=False, enabled_at=None)
 
@@ -154,6 +160,13 @@ def update_user(
         target.status = next_status
         target.deactivated_at = utcnow() if next_status == "disabled" else None
     target.updated_at = utcnow()
+    log_event(
+        db,
+        action="user.access.updated",
+        actor_user_id=user.id,
+        target_user_id=target.id,
+        metadata={"role": target.role, "status": target.status},
+    )
     db.commit()
     db.refresh(target)
     return _user_response(target)

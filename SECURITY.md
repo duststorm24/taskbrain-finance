@@ -33,6 +33,8 @@ The backend validates startup settings and refuses to run with placeholder sessi
 - Disabled users cannot log in or continue using existing sessions.
 - Authenticator-app MFA is required before Plaid Link can be opened.
 - The backend prevents removing the last active owner.
+- Owner-only security operations expose audit events and access-review records.
+- The security audit script checks local configuration, runtime support, inactive-user deprovisioning, Python dependencies, and frontend dependencies.
 
 ## Plaid Token Handling
 

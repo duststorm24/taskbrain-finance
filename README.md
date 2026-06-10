@@ -12,6 +12,9 @@ This project is built for read-only personal financial analysis. It does not ini
 - Plaid Link sandbox connection flow with production-linking safety lock
 - Authenticator-app MFA gate before Plaid Link can open
 - Owner/member access-control foundation with user disable support
+- Owner-only audit logs and in-app access-review evidence
+- Automated inactive-user deprovisioning script for scheduled cron use
+- Runtime EOL/support and dependency audit scripts
 - Encrypted Plaid access-token storage
 - Plaid disconnect/delete control for revoking access and removing local synced data
 - Account, transaction, recurring-stream, cash-flow, planning, and sync foundations
@@ -42,6 +45,7 @@ The app does not request Plaid Payments, Transfer, Auth, Identity, Signal, or ot
 - Plaid Link requires the signed-in user to enable MFA first
 - OpenAI analysis receives sanitized financial context only, not raw secrets, Plaid tokens, API keys, account numbers, or unnecessary transaction detail
 - Deep AI analysis is intended for initial setup after linking institutions, then occasional yearly baseline updates
+- Security audit events are recorded for account registration, successful login, MFA changes, user access changes, Plaid connection changes, and access-review completion
 - The current security program is documented in `docs/security-program.md`
 
 ## Repository Layout
@@ -90,7 +94,7 @@ For a Raspberry Pi deployment, use a local reverse proxy such as Caddy or Nginx,
 Before enabling real Plaid connections, run:
 
 ```bash
-./.venv/bin/python finance/backend/scripts/local_security_check.py
+./.venv/bin/python finance/backend/scripts/security_audit.py
 ```
 
 ## License

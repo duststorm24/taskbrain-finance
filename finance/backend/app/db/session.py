@@ -21,12 +21,14 @@ def _sqlite_path(database_url: str) -> Path | None:
 
 settings = get_settings()
 sqlite_path = _sqlite_path(settings.database_url)
+database_url = settings.database_url
 if sqlite_path:
     sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+    database_url = f"sqlite:///{sqlite_path}"
 
 engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
+    database_url,
+    connect_args={"check_same_thread": False} if database_url.startswith("sqlite") else {},
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
@@ -47,4 +49,3 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
-

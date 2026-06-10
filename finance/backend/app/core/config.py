@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     openai_daily_model: str = Field(default="", validation_alias="OPENAI_DAILY_MODEL")
     openai_detailed_model: str = Field(default="", validation_alias="OPENAI_DETAILED_MODEL")
     openai_complete_model: str = Field(default="", validation_alias="OPENAI_COMPLETE_MODEL")
+    inactive_user_disable_days: int = Field(default=90, validation_alias="TASKBRAIN_FINANCE_INACTIVE_USER_DISABLE_DAYS")
 
     @property
     def allowed_origins_list(self) -> list[str]:

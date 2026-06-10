@@ -29,6 +29,11 @@ def command_available(command: list[str], cwd: Path = ROOT) -> bool:
 def main() -> int:
     failures = 0
     failures += run("local security configuration", [sys.executable, str(BACKEND / "scripts" / "local_security_check.py")])
+    failures += run("runtime EOL/support check", [sys.executable, str(BACKEND / "scripts" / "eol_check.py")])
+    failures += run(
+        "inactive-user deprovisioning dry run",
+        [sys.executable, str(BACKEND / "scripts" / "deprovision_inactive_users.py"), "--dry-run"],
+    )
 
     if command_available([sys.executable, "-m", "pip_audit", "--version"]):
         failures += run("Python dependency audit", [sys.executable, "-m", "pip_audit"], cwd=BACKEND)

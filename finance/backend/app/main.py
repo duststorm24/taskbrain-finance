@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse, Response
 
-from app.api.routes import ai, auth, budget, cash_flow, debt, health, investments, net_worth, plaid, planning, sync
+from app.api.routes import ai, auth, budget, cash_flow, debt, health, investments, net_worth, plaid, planning, security, sync
 from app.core.config import get_settings
 
 
@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(plaid.router, prefix="/api/finance/plaid", tags=["plaid"])
     app.include_router(sync.router, prefix="/api/finance/sync", tags=["sync"])
     app.include_router(planning.router, prefix="/api/finance/planning", tags=["planning"])
+    app.include_router(security.router, prefix="/api/finance/security", tags=["security"])
     app.include_router(net_worth.router, prefix="/api/finance/net-worth", tags=["net-worth"])
     app.include_router(cash_flow.router, prefix="/api/finance/cash-flow", tags=["cash-flow"])
     app.include_router(debt.router, prefix="/api/finance/debt", tags=["debt"])

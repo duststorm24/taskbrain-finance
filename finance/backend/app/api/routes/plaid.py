@@ -20,6 +20,7 @@ from app.db.models import (
 )
 from app.db.session import get_db
 from app.schemas.plaid import ExchangePublicTokenRequest, LinkTokenResponse, PlaidItemListResponse, PlaidItemResponse
+from app.services.audit_log import log_event
 from app.services.plaid_service import create_link_token, exchange_public_token_for_item, remove_item
 
 
@@ -83,6 +84,13 @@ def exchange_public_token(
         updated_at=now,
     )
     db.add(plaid_item)
+    log_event(
+        db,
+        action="plaid.item.connected",
+        actor_user_id=user.id,
+        target_user_id=user.id,
+        metadata={"plaid_item_id": plaid_item.id, "products": item.get("products", [])},
+    )
     db.commit()
     return PlaidItemResponse(item_id=plaid_item.id, status="stored")
 
@@ -131,6 +139,13 @@ def disconnect_item(
     db.query(NetWorthSnapshot).filter(NetWorthSnapshot.user_id == user.id).delete(synchronize_session=False)
     db.query(AiSummary).filter(AiSummary.user_id == user.id).delete(synchronize_session=False)
     db.query(SyncRun).filter(SyncRun.user_id == user.id).delete(synchronize_session=False)
+    log_event(
+        db,
+        action="plaid.item.disconnected",
+        actor_user_id=user.id,
+        target_user_id=user.id,
+        metadata={"plaid_item_id": plaid_item.id, "accounts_deleted": len(account_ids)},
+    )
     db.delete(plaid_item)
     db.commit()
     return PlaidItemResponse(item_id=item_id, status="disconnected")
